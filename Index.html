@@ -407,7 +407,7 @@
             handleResultValidation();
         }
 
-        // --- OPTIMAL CLIENT-SIDE AI Logic (with robust blocking) ---
+        // --- OPTIMAL CLIENT-SIDE AI Logic (with blocking as highest priority) ---
         function getAvailableMoves(currentBoard) {
             const moves = [];
             for (let r = 0; r < 3; r++) {
@@ -427,24 +427,24 @@
                 return; // Should not happen if game is active and not a draw
             }
 
-            // Priority 1: Check if AI can win on this move
+            // Priority 1: Check if player can win on their *next* move and block them
             for (let i = 0; i < availableMoves.length; i++) {
                 const [r, c] = availableMoves[i];
-                board[r][c] = aiSymbol; // Temporarily make AI's move
-                if (checkWin(board, aiSymbol)) {
-                    handleCellPlayed(r, c, aiSymbol);
+                board[r][c] = playerSymbol; // Temporarily make player's move
+                if (checkWin(board, playerSymbol)) {
+                    handleCellPlayed(r, c, aiSymbol); // Block with AI's symbol
                     handleResultValidation();
                     return;
                 }
                 board[r][c] = ''; // Undo temporary move
             }
 
-            // Priority 2: Check if player can win on their *next* move and block them
+            // Priority 2: Check if AI can win on this move
             for (let i = 0; i < availableMoves.length; i++) {
                 const [r, c] = availableMoves[i];
-                board[r][c] = playerSymbol; // Temporarily make player's move
-                if (checkWin(board, playerSymbol)) {
-                    handleCellPlayed(r, c, aiSymbol); // Block with AI's symbol
+                board[r][c] = aiSymbol; // Temporarily make AI's move
+                if (checkWin(board, aiSymbol)) {
+                    handleCellPlayed(r, c, aiSymbol);
                     handleResultValidation();
                     return;
                 }
@@ -482,8 +482,7 @@
                 return;
             }
             
-            // Fallback: Choose a random available move (should ideally not be reached with optimal strategy
-            // unless the only remaining moves are random side/corner and all others are blocked/taken).
+            // Fallback: Choose a random available move (should ideally not be reached with this strategy)
             const randomIndex = Math.floor(Math.random() * availableMoves.length);
             const [randomR, randomC] = availableMoves[randomIndex];
             handleCellPlayed(randomR, randomC, aiSymbol);
