@@ -407,7 +407,7 @@
             handleResultValidation();
         }
 
-        // --- OPTIMAL CLIENT-SIDE AI Logic ---
+        // --- OPTIMAL CLIENT-SIDE AI Logic (with robust blocking) ---
         function getAvailableMoves(currentBoard) {
             const moves = [];
             for (let r = 0; r < 3; r++) {
@@ -427,7 +427,7 @@
                 return; // Should not happen if game is active and not a draw
             }
 
-            // Priority 1: Check if AI can win
+            // Priority 1: Check if AI can win on this move
             for (let i = 0; i < availableMoves.length; i++) {
                 const [r, c] = availableMoves[i];
                 board[r][c] = aiSymbol; // Temporarily make AI's move
@@ -439,7 +439,7 @@
                 board[r][c] = ''; // Undo temporary move
             }
 
-            // Priority 2: Check if player can win and block them
+            // Priority 2: Check if player can win on their *next* move and block them
             for (let i = 0; i < availableMoves.length; i++) {
                 const [r, c] = availableMoves[i];
                 board[r][c] = playerSymbol; // Temporarily make player's move
@@ -460,27 +460,30 @@
 
             // Priority 4: Take any corner if available
             const corners = [[0, 0], [0, 2], [2, 0], [2, 2]];
-            for (let i = 0; i < corners.length; i++) {
-                const [r, c] = corners[i];
-                if (board[r][c] === '') {
-                    handleCellPlayed(r, c, aiSymbol);
-                    handleResultValidation();
-                    return;
-                }
+            // Filter to only include available corners
+            const availableCorners = corners.filter(([r, c]) => board[r][c] === '');
+            if (availableCorners.length > 0) {
+                // Take a random available corner
+                const [r, c] = availableCorners[Math.floor(Math.random() * availableCorners.length)];
+                handleCellPlayed(r, c, aiSymbol);
+                handleResultValidation();
+                return;
             }
 
             // Priority 5: Take any side if available (remaining moves)
             const sides = [[0, 1], [1, 0], [1, 2], [2, 1]];
-            for (let i = 0; i < sides.length; i++) {
-                const [r, c] = sides[i];
-                if (board[r][c] === '') {
-                    handleCellPlayed(r, c, aiSymbol);
-                    handleResultValidation();
-                    return;
-                }
+            // Filter to only include available sides
+            const availableSides = sides.filter(([r, c]) => board[r][c] === '');
+            if (availableSides.length > 0) {
+                // Take a random available side
+                const [r, c] = availableSides[Math.floor(Math.random() * availableSides.length)];
+                handleCellPlayed(r, c, aiSymbol);
+                handleResultValidation();
+                return;
             }
             
-            // Fallback: Choose a random available move (should ideally not be reached with optimal strategy)
+            // Fallback: Choose a random available move (should ideally not be reached with optimal strategy
+            // unless the only remaining moves are random side/corner and all others are blocked/taken).
             const randomIndex = Math.floor(Math.random() * availableMoves.length);
             const [randomR, randomC] = availableMoves[randomIndex];
             handleCellPlayed(randomR, randomC, aiSymbol);
