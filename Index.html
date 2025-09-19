@@ -1,193 +1,423 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Tic Tac Toe</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: "Segoe UI", sans-serif;
-      user-select: none; /* disable text selection */
-      -webkit-tap-highlight-color: transparent; /* remove touch highlight on mobile */
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe</title>
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #8BC34A;
+            --background-color: #E8F5E9;
+            --text-color: #212121;
+            --border-color: #A5D6A7;
+            --winning-color: #FFEB3B;
+            --button-active-color: #388E3C;
+        }
 
-    body {
-      background: #0f172a;
-      color: white;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    }
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            -webkit-user-select: none; /* Safari */
+            -moz-user-select: none; /* Firefox */
+            -ms-user-select: none; /* IE10+/Edge */
+            user-select: none; /* Standard */
+            -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
+        }
 
-    .screen {
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      gap: 1rem;
-      text-align: center;
-      width: 100%;
-      max-width: 400px;
-      padding: 1rem;
-    }
+        .container {
+            text-align: center;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            max-width: 90%;
+            width: 400px;
+            box-sizing: border-box;
+        }
 
-    .active {
-      display: flex;
-    }
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
 
-    h1 {
-      font-size: 2rem;
-    }
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            animation: fadeIn 0.5s ease-in-out;
+        }
 
-    button {
-      background: #2563eb;
-      color: white;
-      border: none;
-      padding: 0.8rem 1.5rem;
-      border-radius: 12px;
-      font-size: 1.1rem;
-      cursor: pointer;
-      transition: transform 0.1s ease, background 0.2s ease;
-    }
+        .screen.active {
+            display: flex;
+        }
 
-    button:active {
-      transform: scale(0.95);
-      background: #1d4ed8;
-    }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-    .board {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      width: 100%;
-      max-width: 300px;
-      margin-top: 1rem;
-    }
+        .button {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.2em;
+            cursor: pointer;
+            margin: 10px 0;
+            width: 80%;
+            max-width: 250px;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            touch-action: manipulation; /* Improves responsiveness on touch devices */
+        }
 
-    .cell {
-      background: #1e293b;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 2.5rem;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: transform 0.1s ease, background 0.15s ease;
-      aspect-ratio: 1 / 1; /* makes cells perfectly square on any screen */
-    }
+        .button:active {
+            background-color: var(--button-active-color);
+            transform: translateY(2px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
 
-    .cell:active {
-      transform: scale(0.92);
-      background: #334155;
-    }
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 5px;
+            margin-top: 20px;
+            background-color: var(--border-color);
+            padding: 5px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 315px; /* 3*100px + 2*5px */
+            width: 100%;
+            box-sizing: border-box;
+        }
 
-    .status {
-      font-size: 1.2rem;
-      margin-top: 0.5rem;
-    }
-  </style>
+        .cell {
+            width: 100px;
+            height: 100px;
+            background-color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3em;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            color: var(--text-color);
+            touch-action: manipulation;
+        }
+
+        .cell.x {
+            color: #E91E63; /* Red for X */
+        }
+
+        .cell.o {
+            color: #2196F3; /* Blue for O */
+        }
+
+        .cell:active {
+            background-color: #f0f0f0;
+            transform: scale(0.98);
+        }
+
+        .cell.winning {
+            background-color: var(--winning-color);
+            animation: winAnimation 0.5s ease-in-out forwards;
+        }
+
+        @keyframes winAnimation {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); background-color: var(--winning-color); }
+        }
+
+        #status {
+            margin-top: 20px;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        #restart-button {
+            margin-top: 20px;
+            background-color: #FF9800;
+            width: 60%;
+            max-width: 200px;
+        }
+
+        #restart-button:active {
+            background-color: #F57C00;
+        }
+
+        /* Mobile specific adjustments */
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            .button {
+                padding: 12px 25px;
+                font-size: 1em;
+                width: 90%;
+            }
+
+            #game-board {
+                grid-template-columns: repeat(3, 80px);
+                grid-template-rows: repeat(3, 80px);
+                gap: 4px;
+                max-width: 252px; /* 3*80px + 2*4px */
+            }
+
+            .cell {
+                width: 80px;
+                height: 80px;
+                font-size: 2.5em;
+            }
+
+            #status {
+                font-size: 1.2em;
+            }
+        }
+
+        @media (max-width: 350px) {
+            #game-board {
+                grid-template-columns: repeat(3, 70px);
+                grid-template-rows: repeat(3, 70px);
+                gap: 3px;
+                max-width: 219px; /* 3*70px + 2*3px */
+            }
+
+            .cell {
+                width: 70px;
+                height: 70px;
+                font-size: 2em;
+            }
+        }
+    </style>
 </head>
 <body>
-  <!-- Home Screen -->
-  <div id="homeScreen" class="screen active">
-    <h1>Welcome to Tic Tac Toe</h1>
-    <button onclick="startGame()">Play</button>
-  </div>
+    <div class="container">
+        <div id="home-screen" class="screen active">
+            <h1>Tic Tac Toe</h1>
+            <button class="button" id="play-button">Play</button>
+        </div>
 
-  <!-- Game Screen -->
-  <div id="gameScreen" class="screen">
-    <h1>Tic Tac Toe</h1>
-    <div class="board" id="board"></div>
-    <div class="status" id="status">Player X's turn</div>
-    <button onclick="resetGame()">Back to Home</button>
-  </div>
+        <div id="mode-screen" class="screen">
+            <h1>Choose Mode</h1>
+            <button class="button" id="multiplayer-button">Multiplayer</button>
+            <button class="button" id="ai-button">Vs AI</button>
+            <button class="button" id="back-to-home-button">Back</button>
+        </div>
 
-  <script>
-    const homeScreen = document.getElementById("homeScreen");
-    const gameScreen = document.getElementById("gameScreen");
-    const boardEl = document.getElementById("board");
-    const statusEl = document.getElementById("status");
+        <div id="game-screen" class="screen">
+            <h1>Tic Tac Toe</h1>
+            <div id="status">Player X's Turn</div>
+            <div id="game-board">
+                <div class="cell" data-cell-index="0"></div>
+                <div class="cell" data-cell-index="1"></div>
+                <div class="cell" data-cell-index="2"></div>
+                <div class="cell" data-cell-index="3"></div>
+                <div class="cell" data-cell-index="4"></div>
+                <div class="cell" data-cell-index="5"></div>
+                <div class="cell" data-cell-index="6"></div>
+                <div class="cell" data-cell-index="7"></div>
+                <div class="cell" data-cell-index="8"></div>
+            </div>
+            <button class="button" id="restart-button">Restart</button>
+            <button class="button" id="back-to-mode-button">Mode Select</button>
+        </div>
+    </div>
 
-    let board = Array(9).fill("");
-    let currentPlayer = "X";
-    let gameActive = true;
+    <script>
+        const homeScreen = document.getElementById('home-screen');
+        const modeScreen = document.getElementById('mode-screen');
+        const gameScreen = document.getElementById('game-screen');
 
-    function startGame() {
-      homeScreen.classList.remove("active");
-      gameScreen.classList.add("active");
-      createBoard();
-    }
+        const playButton = document.getElementById('play-button');
+        const multiplayerButton = document.getElementById('multiplayer-button');
+        const aiButton = document.getElementById('ai-button');
+        const backToHomeButton = document.getElementById('back-to-home-button');
+        const backToModeButton = document.getElementById('back-to-mode-button');
 
-    function resetGame() {
-      board = Array(9).fill("");
-      currentPlayer = "X";
-      gameActive = true;
-      statusEl.textContent = "Player X's turn";
-      homeScreen.classList.add("active");
-      gameScreen.classList.remove("active");
-      boardEl.innerHTML = "";
-    }
+        const cells = document.querySelectorAll('.cell');
+        const statusDisplay = document.getElementById('status');
+        const restartButton = document.getElementById('restart-button');
 
-    function createBoard() {
-      boardEl.innerHTML = "";
-      board.forEach((_, i) => {
-        const cell = document.createElement("div");
-        cell.classList.add("cell");
-        cell.dataset.index = i;
-        cell.addEventListener("touchstart", handleCellTouch);
-        cell.addEventListener("click", handleCellClick);
-        boardEl.appendChild(cell);
-      });
-    }
+        let gameActive = false;
+        let currentPlayer = 'X';
+        let gameState = ['', '', '', '', '', '', '', '', ''];
+        let gameMode = ''; // 'multiplayer' or 'ai'
 
-    function handleCellTouch(e) {
-      // Prevent ghost clicks on mobile
-      e.preventDefault();
-    }
+        const winningConditions = [
+            [0, 1, 2],
+            [3, 4, 5],
+            [6, 7, 8],
+            [0, 3, 6],
+            [1, 4, 7],
+            [2, 5, 8],
+            [0, 4, 8],
+            [2, 4, 6]
+        ];
 
-    function handleCellClick(e) {
-      const index = e.target.dataset.index;
-      if (board[index] !== "" || !gameActive) return;
+        // Function to switch screens
+        function showScreen(screenToShow) {
+            const screens = document.querySelectorAll('.screen');
+            screens.forEach(screen => screen.classList.remove('active'));
+            screenToShow.classList.add('active');
+        }
 
-      board[index] = currentPlayer;
-      e.target.textContent = currentPlayer;
+        // Home Screen Logic
+        playButton.addEventListener('click', () => showScreen(modeScreen));
 
-      if (checkWin()) {
-        statusEl.textContent = `Player ${currentPlayer} Wins! 🎉`;
-        gameActive = false;
-        return;
-      }
+        // Mode Screen Logic
+        multiplayerButton.addEventListener('click', () => {
+            gameMode = 'multiplayer';
+            startGame();
+            showScreen(gameScreen);
+        });
 
-      if (!board.includes("")) {
-        statusEl.textContent = "It's a Draw! 🤝";
-        gameActive = false;
-        return;
-      }
+        aiButton.addEventListener('click', () => {
+            gameMode = 'ai';
+            startGame();
+            showScreen(gameScreen);
+        });
 
-      currentPlayer = currentPlayer === "X" ? "O" : "X";
-      statusEl.textContent = `Player ${currentPlayer}'s turn`;
-    }
+        backToHomeButton.addEventListener('click', () => showScreen(homeScreen));
+        backToModeButton.addEventListener('click', () => {
+            showScreen(modeScreen);
+            resetGame(); // Reset game state when going back to mode selection
+        });
 
-    function checkWin() {
-      const winPatterns = [
-        [0, 1, 2],
-        [3, 4, 5],
-        [6, 7, 8],
-        [0, 3, 6],
-        [1, 4, 7],
-        [2, 5, 8],
-        [0, 4, 8],
-        [2, 4, 6]
-      ];
+        // Game Logic
+        function handleCellPlayed(clickedCell, clickedCellIndex) {
+            gameState[clickedCellIndex] = currentPlayer;
+            clickedCell.innerHTML = currentPlayer;
+            clickedCell.classList.add(currentPlayer.toLowerCase()); // Add class for styling
+        }
 
-      return winPatterns.some(pattern => {
-        const [a, b, c] = pattern;
-        return board[a] && board[a] === board[b] && board[a] === board[c];
-      });
-    }
-  </script>
+        function handlePlayerChange() {
+            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+            statusDisplay.innerHTML = `Player ${currentPlayer}'s Turn`;
+        }
+
+        function handleResultValidation() {
+            let roundWon = false;
+            for (let i = 0; i < winningConditions.length; i++) {
+                const winCondition = winningConditions[i];
+                let a = gameState[winCondition[0]];
+                let b = gameState[winCondition[1]];
+                let c = gameState[winCondition[2]];
+                if (a === '' || b === '' || c === '') {
+                    continue;
+                }
+                if (a === b && b === c) {
+                    roundWon = true;
+                    // Highlight winning cells
+                    winCondition.forEach(index => {
+                        cells[index].classList.add('winning');
+                    });
+                    break;
+                }
+            }
+
+            if (roundWon) {
+                statusDisplay.innerHTML = `Player ${currentPlayer} Has Won!`;
+                gameActive = false;
+                return;
+            }
+
+            let roundDraw = !gameState.includes('');
+            if (roundDraw) {
+                statusDisplay.innerHTML = 'Game Ended in a Draw!';
+                gameActive = false;
+                return;
+            }
+
+            handlePlayerChange();
+            if (gameActive && gameMode === 'ai' && currentPlayer === 'O') {
+                setTimeout(aiMove, 700); // AI makes a move after a short delay
+            }
+        }
+
+        function handleCellClick(clickedCellEvent) {
+            const clickedCell = clickedCellEvent.target;
+            const clickedCellIndex = parseInt(clickedCell.getAttribute('data-cell-index'));
+
+            if (gameState[clickedCellIndex] !== '' || !gameActive) {
+                return;
+            }
+
+            handleCellPlayed(clickedCell, clickedCellIndex);
+            handleResultValidation();
+        }
+
+        function aiMove() {
+            let availableCells = [];
+            for (let i = 0; i < gameState.length; i++) {
+                if (gameState[i] === '') {
+                    availableCells.push(i);
+                }
+            }
+
+            if (availableCells.length > 0) {
+                const randomIndex = Math.floor(Math.random() * availableCells.length);
+                const chosenCellIndex = availableCells[randomIndex];
+                const chosenCell = cells[chosenCellIndex];
+
+                handleCellPlayed(chosenCell, chosenCellIndex);
+                handleResultValidation();
+            }
+        }
+
+        function startGame() {
+            gameActive = true;
+            currentPlayer = 'X';
+            gameState = ['', '', '', '', '', '', '', '', ''];
+            statusDisplay.innerHTML = `Player ${currentPlayer}'s Turn`;
+            cells.forEach(cell => {
+                cell.innerHTML = '';
+                cell.classList.remove('x', 'o', 'winning');
+            });
+
+            if (gameMode === 'ai' && currentPlayer === 'O') {
+                setTimeout(aiMove, 700);
+            }
+        }
+
+        function resetGame() {
+            startGame();
+        }
+
+        cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+        restartButton.addEventListener('click', resetGame);
+
+        // Initial setup for buttons:
+        // Using touchstart/touchend for mobile "hover" effect simulation
+        const allButtons = document.querySelectorAll('.button, .cell');
+        allButtons.forEach(button => {
+            button.addEventListener('touchstart', function() {
+                this.classList.add('active-touch');
+            }, { passive: true });
+            button.addEventListener('touchend', function() {
+                this.classList.remove('active-touch');
+            });
+            button.addEventListener('touchcancel', function() {
+                this.classList.remove('active-touch');
+            });
+        });
+
+    </script>
 </body>
 </html>
