@@ -431,4 +431,113 @@
             for (let i = 0; i < availableMoves.length; i++) {
                 const [r, c] = availableMoves[i];
                 board[r][c] = aiSymbol; // Temporarily make AI's move
-                if (checkWin(boa
+                if (checkWin(board, aiSymbol)) {
+                    handleCellPlayed(r, c, aiSymbol);
+                    handleResultValidation();
+                    return;
+                }
+                board[r][c] = ''; // Undo temporary move
+            }
+
+            // Priority 2: Check if player can win and block them
+            for (let i = 0; i < availableMoves.length; i++) {
+                const [r, c] = availableMoves[i];
+                board[r][c] = playerSymbol; // Temporarily make player's move
+                if (checkWin(board, playerSymbol)) {
+                    handleCellPlayed(r, c, aiSymbol); // Block with AI's symbol
+                    handleResultValidation();
+                    return;
+                }
+                board[r][c] = ''; // Undo temporary move
+            }
+
+            // Priority 3: Take the center if available
+            if (board[1][1] === '') {
+                handleCellPlayed(1, 1, aiSymbol);
+                handleResultValidation();
+                return;
+            }
+
+            // Priority 4: Take any corner if available
+            const corners = [[0, 0], [0, 2], [2, 0], [2, 2]];
+            for (let i = 0; i < corners.length; i++) {
+                const [r, c] = corners[i];
+                if (board[r][c] === '') {
+                    handleCellPlayed(r, c, aiSymbol);
+                    handleResultValidation();
+                    return;
+                }
+            }
+
+            // Priority 5: Take any side if available (remaining moves)
+            const sides = [[0, 1], [1, 0], [1, 2], [2, 1]];
+            for (let i = 0; i < sides.length; i++) {
+                const [r, c] = sides[i];
+                if (board[r][c] === '') {
+                    handleCellPlayed(r, c, aiSymbol);
+                    handleResultValidation();
+                    return;
+                }
+            }
+            
+            // Fallback: Choose a random available move (should ideally not be reached with optimal strategy)
+            const randomIndex = Math.floor(Math.random() * availableMoves.length);
+            const [randomR, randomC] = availableMoves[randomIndex];
+            handleCellPlayed(randomR, randomC, aiSymbol);
+            handleResultValidation();
+        }
+
+        function startGame() {
+            gameActive = true;
+            
+            // Randomly assign X or O to player and AI
+            playerSymbol = Math.random() < 0.5 ? 'X' : 'O';
+            aiSymbol = playerSymbol === 'X' ? 'O' : 'X';
+
+            // Randomly decide who goes first
+            currentPlayer = Math.random() < 0.5 ? 'X' : 'O';
+
+            board = [
+                ["", "", ""],
+                ["", "", ""],
+                ["", "", ""]
+            ];
+            statusDisplay.innerHTML = `Player ${currentPlayer}'s Turn`;
+            cells.forEach(cell => {
+                cell.innerHTML = '';
+                cell.classList.remove('x', 'o', 'winning');
+            });
+
+            if (gameMode === 'ai' && currentPlayer === aiSymbol) {
+                statusDisplay.innerHTML = `AI (${aiSymbol}) goes first...`;
+                setTimeout(clientSideAiMove, 1000); 
+            } else if (gameMode === 'ai' && currentPlayer === playerSymbol) {
+                 statusDisplay.innerHTML = `Your turn (${playerSymbol})!`;
+            } else {
+                statusDisplay.innerHTML = `Player ${currentPlayer}'s Turn`;
+            }
+        }
+
+        function resetGame() {
+            startGame();
+        }
+
+        cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+        restartButton.addEventListener('click', resetGame);
+
+        const allInteractiveElements = document.querySelectorAll('.button, .cell');
+        allInteractiveElements.forEach(element => {
+            element.addEventListener('touchstart', function(e) {
+                this.classList.add('active-touch');
+            }, { passive: true });
+            element.addEventListener('touchend', function() {
+                this.classList.remove('active-touch');
+            });
+            element.addEventListener('touchcancel', function() {
+                this.classList.remove('active-touch');
+            });
+        });
+
+    </script>
+</body>
+</html>
