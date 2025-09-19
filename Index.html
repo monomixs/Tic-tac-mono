@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tic Tac Toe</title>
+    <title>Tic Tac Toe Optimal Client-Side AI</title>
     <style>
         :root {
             --primary-color: #4CAF50;
@@ -13,6 +13,8 @@
             --border-color: #A5D6A7;
             --winning-color: #FFEB3B;
             --button-active-color: #388E3C;
+            --popup-bg: rgba(0, 0, 0, 0.7);
+            --popup-card-bg: #fff;
         }
 
         body {
@@ -40,6 +42,7 @@
             max-width: 90%;
             width: 400px;
             box-sizing: border-box;
+            position: relative; /* For popup positioning */
         }
 
         h1 {
@@ -82,7 +85,7 @@
             touch-action: manipulation; /* Improves responsiveness on touch devices */
         }
 
-        .button:active {
+        .button:active, .button.active-touch {
             background-color: var(--button-active-color);
             transform: translateY(2px);
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -127,7 +130,7 @@
             color: #2196F3; /* Blue for O */
         }
 
-        .cell:active {
+        .cell:active, .cell.active-touch {
             background-color: #f0f0f0;
             transform: scale(0.98);
         }
@@ -157,7 +160,7 @@
             max-width: 200px;
         }
 
-        #restart-button:active {
+        #restart-button:active, #restart-button.active-touch {
             background-color: #F57C00;
         }
 
@@ -223,17 +226,17 @@
 
         <div id="game-screen" class="screen">
             <h1>Tic Tac Toe</h1>
-            <div id="status">Player X's Turn</div>
+            <div id="status"></div>
             <div id="game-board">
-                <div class="cell" data-cell-index="0"></div>
-                <div class="cell" data-cell-index="1"></div>
-                <div class="cell" data-cell-index="2"></div>
-                <div class="cell" data-cell-index="3"></div>
-                <div class="cell" data-cell-index="4"></div>
-                <div class="cell" data-cell-index="5"></div>
-                <div class="cell" data-cell-index="6"></div>
-                <div class="cell" data-cell-index="7"></div>
-                <div class="cell" data-cell-index="8"></div>
+                <div class="cell" data-row="0" data-col="0"></div>
+                <div class="cell" data-row="0" data-col="1"></div>
+                <div class="cell" data-row="0" data-col="2"></div>
+                <div class="cell" data-row="1" data-col="0"></div>
+                <div class="cell" data-row="1" data-col="1"></div>
+                <div class="cell" data-row="1" data-col="2"></div>
+                <div class="cell" data-row="2" data-col="0"></div>
+                <div class="cell" data-row="2" data-col="1"></div>
+                <div class="cell" data-row="2" data-col="2"></div>
             </div>
             <button class="button" id="restart-button">Restart</button>
             <button class="button" id="back-to-mode-button">Mode Select</button>
@@ -256,32 +259,41 @@
         const restartButton = document.getElementById('restart-button');
 
         let gameActive = false;
-        let currentPlayer = 'X';
-        let gameState = ['', '', '', '', '', '', '', '', ''];
+        let currentPlayer = ''; // Will be 'X' or 'O'
+        let playerSymbol = ''; // Player's assigned symbol
+        let aiSymbol = '';     // AI's assigned symbol
         let gameMode = ''; // 'multiplayer' or 'ai'
 
-        const winningConditions = [
-            [0, 1, 2],
-            [3, 4, 5],
-            [6, 7, 8],
-            [0, 3, 6],
-            [1, 4, 7],
-            [2, 5, 8],
-            [0, 4, 8],
-            [2, 4, 6]
+        let board = [
+            ["", "", ""],
+            ["", "", ""],
+            ["", "", ""]
         ];
 
-        // Function to switch screens
+        const winningConditions = [
+            // Rows
+            [[0, 0], [0, 1], [0, 2]],
+            [[1, 0], [1, 1], [1, 2]],
+            [[2, 0], [2, 1], [2, 2]],
+            // Columns
+            [[0, 0], [1, 0], [2, 0]],
+            [[0, 1], [1, 1], [2, 1]],
+            [[0, 2], [1, 2], [2, 2]],
+            // Diagonals
+            [[0, 0], [1, 1], [2, 2]],
+            [[0, 2], [1, 1], [2, 0]]
+        ];
+
+        // --- Game Logic ---
+
         function showScreen(screenToShow) {
             const screens = document.querySelectorAll('.screen');
             screens.forEach(screen => screen.classList.remove('active'));
             screenToShow.classList.add('active');
         }
 
-        // Home Screen Logic
         playButton.addEventListener('click', () => showScreen(modeScreen));
 
-        // Mode Screen Logic
         multiplayerButton.addEventListener('click', () => {
             gameMode = 'multiplayer';
             startGame();
@@ -297,14 +309,14 @@
         backToHomeButton.addEventListener('click', () => showScreen(homeScreen));
         backToModeButton.addEventListener('click', () => {
             showScreen(modeScreen);
-            resetGame(); // Reset game state when going back to mode selection
+            resetGame();
         });
 
-        // Game Logic
-        function handleCellPlayed(clickedCell, clickedCellIndex) {
-            gameState[clickedCellIndex] = currentPlayer;
-            clickedCell.innerHTML = currentPlayer;
-            clickedCell.classList.add(currentPlayer.toLowerCase()); // Add class for styling
+        function handleCellPlayed(row, col, symbol) {
+            board[row][col] = symbol;
+            const cellElement = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            cellElement.innerHTML = symbol;
+            cellElement.classList.add(symbol.toLowerCase());
         }
 
         function handlePlayerChange() {
@@ -312,22 +324,40 @@
             statusDisplay.innerHTML = `Player ${currentPlayer}'s Turn`;
         }
 
-        function handleResultValidation() {
-            let roundWon = false;
+        function checkWin(currentBoard, symbol) {
             for (let i = 0; i < winningConditions.length; i++) {
                 const winCondition = winningConditions[i];
-                let a = gameState[winCondition[0]];
-                let b = gameState[winCondition[1]];
-                let c = gameState[winCondition[2]];
+                let allMatch = true;
+                for (let j = 0; j < winCondition.length; j++) {
+                    const [row, col] = winCondition[j];
+                    if (currentBoard[row][col] !== symbol) {
+                        allMatch = false;
+                        break;
+                    }
+                }
+                if (allMatch) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function handleResultValidation() {
+            let roundWon = false;
+            let winningCells = [];
+
+            for (let i = 0; i < winningConditions.length; i++) {
+                const winCondition = winningConditions[i];
+                let a = board[winCondition[0][0]][winCondition[0][1]];
+                let b = board[winCondition[1][0]][winCondition[1][1]];
+                let c = board[winCondition[2][0]][winCondition[2][1]];
+
                 if (a === '' || b === '' || c === '') {
                     continue;
                 }
                 if (a === b && b === c) {
                     roundWon = true;
-                    // Highlight winning cells
-                    winCondition.forEach(index => {
-                        cells[index].classList.add('winning');
-                    });
+                    winningCells = winCondition;
                     break;
                 }
             }
@@ -335,10 +365,23 @@
             if (roundWon) {
                 statusDisplay.innerHTML = `Player ${currentPlayer} Has Won!`;
                 gameActive = false;
+                winningCells.forEach(([row, col]) => {
+                    document.querySelector(`[data-row="${row}"][data-col="${col}"]`).classList.add('winning');
+                });
                 return;
             }
 
-            let roundDraw = !gameState.includes('');
+            let roundDraw = true;
+            for (let r = 0; r < 3; r++) {
+                for (let c = 0; c < 3; c++) {
+                    if (board[r][c] === '') {
+                        roundDraw = false;
+                        break;
+                    }
+                }
+                if (!roundDraw) break;
+            }
+
             if (roundDraw) {
                 statusDisplay.innerHTML = 'Game Ended in a Draw!';
                 gameActive = false;
@@ -346,78 +389,46 @@
             }
 
             handlePlayerChange();
-            if (gameActive && gameMode === 'ai' && currentPlayer === 'O') {
-                setTimeout(aiMove, 700); // AI makes a move after a short delay
+            if (gameActive && gameMode === 'ai' && currentPlayer === aiSymbol) {
+                setTimeout(clientSideAiMove, 700); 
             }
         }
 
         function handleCellClick(clickedCellEvent) {
             const clickedCell = clickedCellEvent.target;
-            const clickedCellIndex = parseInt(clickedCell.getAttribute('data-cell-index'));
+            const row = parseInt(clickedCell.getAttribute('data-row'));
+            const col = parseInt(clickedCell.getAttribute('data-col'));
 
-            if (gameState[clickedCellIndex] !== '' || !gameActive) {
+            if (board[row][col] !== '' || !gameActive || (gameMode === 'ai' && currentPlayer === aiSymbol)) {
                 return;
             }
 
-            handleCellPlayed(clickedCell, clickedCellIndex);
+            handleCellPlayed(row, col, currentPlayer);
             handleResultValidation();
         }
 
-        function aiMove() {
-            let availableCells = [];
-            for (let i = 0; i < gameState.length; i++) {
-                if (gameState[i] === '') {
-                    availableCells.push(i);
+        // --- OPTIMAL CLIENT-SIDE AI Logic ---
+        function getAvailableMoves(currentBoard) {
+            const moves = [];
+            for (let r = 0; r < 3; r++) {
+                for (let c = 0; c < 3; c++) {
+                    if (currentBoard[r][c] === '') {
+                        moves.push([r, c]);
+                    }
                 }
             }
+            return moves;
+        }
 
-            if (availableCells.length > 0) {
-                const randomIndex = Math.floor(Math.random() * availableCells.length);
-                const chosenCellIndex = availableCells[randomIndex];
-                const chosenCell = cells[chosenCellIndex];
+        function clientSideAiMove() {
+            const availableMoves = getAvailableMoves(board);
 
-                handleCellPlayed(chosenCell, chosenCellIndex);
-                handleResultValidation();
+            if (availableMoves.length === 0) {
+                return; // Should not happen if game is active and not a draw
             }
-        }
 
-        function startGame() {
-            gameActive = true;
-            currentPlayer = 'X';
-            gameState = ['', '', '', '', '', '', '', '', ''];
-            statusDisplay.innerHTML = `Player ${currentPlayer}'s Turn`;
-            cells.forEach(cell => {
-                cell.innerHTML = '';
-                cell.classList.remove('x', 'o', 'winning');
-            });
-
-            if (gameMode === 'ai' && currentPlayer === 'O') {
-                setTimeout(aiMove, 700);
-            }
-        }
-
-        function resetGame() {
-            startGame();
-        }
-
-        cells.forEach(cell => cell.addEventListener('click', handleCellClick));
-        restartButton.addEventListener('click', resetGame);
-
-        // Initial setup for buttons:
-        // Using touchstart/touchend for mobile "hover" effect simulation
-        const allButtons = document.querySelectorAll('.button, .cell');
-        allButtons.forEach(button => {
-            button.addEventListener('touchstart', function() {
-                this.classList.add('active-touch');
-            }, { passive: true });
-            button.addEventListener('touchend', function() {
-                this.classList.remove('active-touch');
-            });
-            button.addEventListener('touchcancel', function() {
-                this.classList.remove('active-touch');
-            });
-        });
-
-    </script>
-</body>
-</html>
+            // Priority 1: Check if AI can win
+            for (let i = 0; i < availableMoves.length; i++) {
+                const [r, c] = availableMoves[i];
+                board[r][c] = aiSymbol; // Temporarily make AI's move
+                if (checkWin(boa
