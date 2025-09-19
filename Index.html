@@ -96,7 +96,7 @@
             grid-template-columns: repeat(3, 100px);
             grid-template-rows: repeat(3, 100px);
             gap: 5px;
-            margin-top: 20px;
+            margin: 20px auto 0 auto; /* Added 'auto' for horizontal centering */
             background-color: var(--border-color);
             padding: 5px;
             border-radius: 10px;
@@ -263,6 +263,7 @@
         let playerSymbol = ''; // Player's assigned symbol
         let aiSymbol = '';     // AI's assigned symbol
         let gameMode = ''; // 'multiplayer' or 'ai'
+        let playerCanMove = true; // NEW: Flag to control player interaction
 
         let board = [
             ["", "", ""],
@@ -322,6 +323,7 @@
         function handlePlayerChange() {
             currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
             statusDisplay.innerHTML = `Player ${currentPlayer}'s Turn`;
+            playerCanMove = true; // Re-enable player moves after AI's turn
         }
 
         function checkWin(currentBoard, symbol) {
@@ -365,6 +367,7 @@
             if (roundWon) {
                 statusDisplay.innerHTML = `Player ${currentPlayer} Has Won!`;
                 gameActive = false;
+                playerCanMove = false; // Disable clicks if game is over
                 winningCells.forEach(([row, col]) => {
                     document.querySelector(`[data-row="${row}"][data-col="${col}"]`).classList.add('winning');
                 });
@@ -385,21 +388,28 @@
             if (roundDraw) {
                 statusDisplay.innerHTML = 'Game Ended in a Draw!';
                 gameActive = false;
+                playerCanMove = false; // Disable clicks if game is over
                 return;
             }
 
             handlePlayerChange();
             if (gameActive && gameMode === 'ai' && currentPlayer === aiSymbol) {
+                playerCanMove = false; // Disable player input during AI turn
                 setTimeout(clientSideAiMove, 700); 
             }
         }
 
         function handleCellClick(clickedCellEvent) {
+            // NEW: Check if player is allowed to move
+            if (!playerCanMove) {
+                return; 
+            }
+
             const clickedCell = clickedCellEvent.target;
             const row = parseInt(clickedCell.getAttribute('data-row'));
             const col = parseInt(clickedCell.getAttribute('data-col'));
 
-            if (board[row][col] !== '' || !gameActive || (gameMode === 'ai' && currentPlayer === aiSymbol)) {
+            if (board[row][col] !== '' || !gameActive) { // No need for AI check here due to playerCanMove
                 return;
             }
 
@@ -424,7 +434,8 @@
             const availableMoves = getAvailableMoves(board);
 
             if (availableMoves.length === 0) {
-                return; // Should not happen if game is active and not a draw
+                playerCanMove = true; // Ensure player can move if AI somehow ends the game in a draw, though it shouldn't
+                return; 
             }
 
             // Priority 1: Check if player can win on their *next* move and block them
@@ -460,10 +471,8 @@
 
             // Priority 4: Take any corner if available
             const corners = [[0, 0], [0, 2], [2, 0], [2, 2]];
-            // Filter to only include available corners
             const availableCorners = corners.filter(([r, c]) => board[r][c] === '');
             if (availableCorners.length > 0) {
-                // Take a random available corner
                 const [r, c] = availableCorners[Math.floor(Math.random() * availableCorners.length)];
                 handleCellPlayed(r, c, aiSymbol);
                 handleResultValidation();
@@ -472,17 +481,15 @@
 
             // Priority 5: Take any side if available (remaining moves)
             const sides = [[0, 1], [1, 0], [1, 2], [2, 1]];
-            // Filter to only include available sides
             const availableSides = sides.filter(([r, c]) => board[r][c] === '');
             if (availableSides.length > 0) {
-                // Take a random available side
                 const [r, c] = availableSides[Math.floor(Math.random() * availableSides.length)];
                 handleCellPlayed(r, c, aiSymbol);
                 handleResultValidation();
                 return;
             }
             
-            // Fallback: Choose a random available move (should ideally not be reached with this strategy)
+            // Fallback: Choose a random available move
             const randomIndex = Math.floor(Math.random() * availableMoves.length);
             const [randomR, randomC] = availableMoves[randomIndex];
             handleCellPlayed(randomR, randomC, aiSymbol);
@@ -492,11 +499,9 @@
         function startGame() {
             gameActive = true;
             
-            // Randomly assign X or O to player and AI
             playerSymbol = Math.random() < 0.5 ? 'X' : 'O';
             aiSymbol = playerSymbol === 'X' ? 'O' : 'X';
 
-            // Randomly decide who goes first
             currentPlayer = Math.random() < 0.5 ? 'X' : 'O';
 
             board = [
@@ -512,11 +517,14 @@
 
             if (gameMode === 'ai' && currentPlayer === aiSymbol) {
                 statusDisplay.innerHTML = `AI (${aiSymbol}) goes first...`;
+                playerCanMove = false; // Disable player input for AI's first move
                 setTimeout(clientSideAiMove, 1000); 
             } else if (gameMode === 'ai' && currentPlayer === playerSymbol) {
                  statusDisplay.innerHTML = `Your turn (${playerSymbol})!`;
-            } else {
+                 playerCanMove = true; // Enable player input for their first move
+            } else { // Multiplayer mode
                 statusDisplay.innerHTML = `Player ${currentPlayer}'s Turn`;
+                playerCanMove = true; // Enable player input
             }
         }
 
