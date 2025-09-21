@@ -40,6 +40,19 @@
             padding: 20px;
         }
 
+
+html, body, .screen, .button, .cell, h1, h2, .status {
+    user-select: none;
+    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none; /* IE10+ */
+    -moz-user-select: none; /* Firefox */
+}
+
+.button, .cell {
+    -webkit-tap-highlight-color: transparent; /* Removes blue highlight on tap */
+    outline: none; /* Removes focus outline */
+}
+
         .screen {
             display: none;
             background: var(--screen-bg);
