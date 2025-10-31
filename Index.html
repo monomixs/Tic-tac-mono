@@ -291,6 +291,68 @@
         body:not(.dark-mode) #theme-toggle .moon { display: block; }
         body.dark-mode #theme-toggle .sun { display: block; }
         body.dark-mode #theme-toggle .moon { display: none; }
+
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .popup {
+            background: var(--screen-bg);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+            max-width: 400px;
+            width: 90%;
+            text-align: left;
+            position: relative;
+            animation: popup-appear 0.3s ease-out;
+        }
+
+        @keyframes popup-appear {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .popup h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        .popup p {
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        .close-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .close-button:hover {
+            transform: scale(1.2);
+        }
     </style>
 </head>
 <body>
@@ -303,6 +365,7 @@
     <div id="homeScreen" class="screen active">
         <h1>Tic Tac Toe</h1>
         <button class="button" onclick="showModeSelect()">Play</button>
+        <button class="button" onclick="showWhatsNew()">What's New</button>
     </div>
 
     <!-- Mode Selection Screen -->
@@ -316,9 +379,8 @@
     <!-- Difficulty Selection Screen -->
     <div id="difficultyScreen" class="screen">
         <h2>Choose Difficulty</h2>
-        <button class="button" onclick="startGame('ai', 'easy')">Easy</button>
-        <button class="button" onclick="startGame('ai', 'normal')">Normal</button>
-        <button class="button" onclick="startGame('ai', 'max')">Max</button>
+        <button class="button" onclick="startGame('ai', 'impossible')">Impossible</button>
+        <button class="button" onclick="startGame('ai', 'kids')">Kids Mode</button>
         <button class="button" onclick="showModeSelect()">Back</button>
     </div>
 
@@ -350,27 +412,48 @@
         <button class="button" onclick="showModeSelect()">Mode Select</button>
     </div>
 
+    <div id="whatsNewPopup" class="popup-overlay" style="display: none;">
+        <div class="popup">
+            <span class="close-button" onclick="hideWhatsNew()">&times;</span>
+            <h2>Version 5.37: <strong>AI Update</strong></h2>
+            <p style="font-family: sans-serif; border: 1px solid #ccc; padding: 15px; border-radius: 8px; max-width: 600px; margin: 20px auto;">
+    <strong style="display: block; font-size: 1.2em; margin-bottom: 10px;">Release Notes: Strategic AI Upgrade</strong>
+
+    <span style="display: block; margin-bottom: 10px;">We've completely overhauled the computer opponent! The old, hardcoded logic has been replaced with the powerful <strong style="color: #007BFF;">Minimax AI</strong>.</span>
+
+    <strong style="display: block; font-size: 1.1em; margin-top: 15px; margin-bottom: 5px;">🧠 Strategic AI Upgrade</strong>
+    <ul style="list-style-type: disc; margin: 0; padding-left: 20px;">
+        <li style="margin-bottom: 8px;">
+            <strong>New AI Logic:</strong> The opponent now uses the <strong style="color: #007BFF;">Minimax algorithm</strong> for decision-making.
+        </li>
+        <li style="margin-bottom: 8px;">
+            <strong>Optimal Play:</strong> The AI can now look ahead multiple moves to determine the <strong style="color: #28a745;">optimal, winning strategy</strong> (or at least the move that guarantees a draw), making the game a much tougher challenge!
+        </li>
+        <li style="margin-bottom: 0;">
+            <strong>New Feature:</strong> Added <strong style="color: #ffc107;">Kids Mode</strong> for an easy win, offering a relaxed experience for all players.
+        </li>
+    </ul>
+</p>
+        </div>
+    </div>
+
     <script>
         // Game state
-        let board = ['', '', '', '', '', '', '', '', ''];
+        let board = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+        const HUMAN = -1;
+        const COMP = +1;
         let currentPlayer = 'X';
         let gameActive = true;
         let gameMode = 'multiplayer';
         let playerScore = 0;
         let aiScore = 0;
-        let aiDifficulty = 'normal';
-        
-        const winPatterns = [
-            [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
-            [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
-            [0, 4, 8], [2, 4, 6] // Diagonals
-        ];
+        let aiDifficulty = 'impossible';
 
-        // Screen navigation with smooth transitions
+        // Screen navigation
         function showHome() {
             fadeOutCurrentScreen(() => {
+                document.getElementById('homeScreen').style.display = 'block';
                 document.getElementById('homeScreen').classList.add('active');
-                setTimeout(() => document.getElementById('homeScreen').style.display = 'block', 10);
             });
         }
 
@@ -378,19 +461,27 @@
             playerScore = 0;
             aiScore = 0;
             fadeOutCurrentScreen(() => {
+                document.getElementById('modeScreen').style.display = 'block';
                 document.getElementById('modeScreen').classList.add('active');
-                setTimeout(() => document.getElementById('modeScreen').style.display = 'block', 10);
             });
         }
 
         function showDifficultySelect() {
             fadeOutCurrentScreen(() => {
+                document.getElementById('difficultyScreen').style.display = 'block';
                 document.getElementById('difficultyScreen').classList.add('active');
-                setTimeout(() => document.getElementById('difficultyScreen').style.display = 'block', 10);
             });
         }
 
-        function startGame(mode, difficulty = null) {
+        function showWhatsNew() {
+            document.getElementById('whatsNewPopup').style.display = 'flex';
+        }
+
+        function hideWhatsNew() {
+            document.getElementById('whatsNewPopup').style.display = 'none';
+        }
+
+        function startGame(mode, difficulty = 'impossible') {
             gameMode = mode;
             aiDifficulty = difficulty;
             resetGame();
@@ -407,9 +498,8 @@
                     leaderboard.style.display = 'none';
                     gameTitle.style.display = 'block';
                 }
-
+                gameScreen.style.display = 'block';
                 gameScreen.classList.add('active');
-                setTimeout(() => gameScreen.style.display = 'block', 10);
             });
         }
 
@@ -425,22 +515,26 @@
                 callback();
             }
         }
-
-        // Game logic
+        
+        // Game Logic
         function makeMove(index) {
-            if (board[index] || !gameActive) return;
-            
-            board[index] = currentPlayer;
+            if (!gameActive) return;
+
+            const row = Math.floor(index / 3);
+            const col = index % 3;
+
+            if (board[row][col] !== 0) return;
+
+            const player = currentPlayer === 'X' ? HUMAN : COMP;
+            board[row][col] = player;
             updateCell(index);
-            
-            if (checkWin()) {
+
+            if (checkWin(player)) {
                 endGame(currentPlayer);
-            } else if (board.every(cell => cell)) {
+            } else if (emptyCells(board).length === 0) {
                 endGame('draw');
             } else {
                 switchPlayer();
-                
-                // AI move if it's AI mode and it's O's turn
                 if (gameMode === 'ai' && currentPlayer === 'O') {
                     setTimeout(makeAIMove, 500);
                 }
@@ -449,151 +543,184 @@
 
         function makeAIMove() {
             if (!gameActive) return;
-            
-            let move = getBestMove();
-            if (move !== -1) {
-                makeMove(move);
+
+            let moveIndex;
+            if (aiDifficulty === 'impossible') {
+                const move = minimax(board, emptyCells(board).length, COMP);
+                moveIndex = move[0] * 3 + move[1];
+            } else {
+                moveIndex = getKidsMove();
+            }
+
+            if (moveIndex !== -1) {
+                makeMove(moveIndex);
             }
         }
 
-        function getBestMove() {
-            // --- MAX DIFFICULTY ---
-            if (aiDifficulty === 'max') {
-                // 1. Win if possible
-                let move = findWinningMove('O');
-                if (move !== -1) return move;
-                // 2. Block if necessary
-                move = findWinningMove('X');
-                if (move !== -1) return move;
-                // 3. Counter corner
-                move = getCornerCounterMove();
-                if (move !== -1) return move;
-                // 4. Take center
-                if (!board[4]) return 4;
-                // 5. Take corner
-                move = getStrategicCorner();
-                if (move !== -1) return move;
-                // 6. Take side
-                return getRandomMove();
-            }
+        function getKidsMove() {
+            // 1. Win if possible
+            let move = findWinningMove(COMP);
+            if (move !== -1) return move;
 
-            // --- NORMAL DIFFICULTY ---
-            if (aiDifficulty === 'normal') {
-                // 1. Win if possible
-                let move = findWinningMove('O');
-                if (move !== -1) return move;
-                // 2. Block if necessary
-                move = findWinningMove('X');
-                if (move !== -1) return move;
-                // 3. Counter corner (60% chance)
-                if (Math.random() < 0.6) {
-                    move = getCornerCounterMove();
-                    if (move !== -1) return move;
-                }
-                // 4. Take center
-                if (!board[4]) return 4;
-                // 5. Take corner
-                move = getStrategicCorner();
-                if (move !== -1) return move;
-                // 6. Take side
-                return getRandomMove();
-            }
+            // 2. Block if necessary
+            move = findWinningMove(HUMAN);
+            if (move !== -1) return move;
 
-            // --- EASY DIFFICULTY ---
-            if (aiDifficulty === 'easy') {
-                // 50% chance of random move
-                if (Math.random() < 0.5) {
-                    return getRandomMove();
-                }
-                // Otherwise, act like normal but with a chance to miss
-                let move = findWinningMove('O');
-                if (move !== -1) return move;
-                
-                move = findWinningMove('X');
-                if (move !== -1 && Math.random() > 0.5) { // 50% chance to miss block
-                     return getRandomMove();
-                }
-                if (move !== -1) return move;
+            // 3. Take center
+            if (board[1][1] === 0) return 4;
 
-                if (!board[4]) return 4;
-                return getRandomMove();
-            }
-            
-            // Default to random if something goes wrong
-            return getRandomMove();
-        }
-
-        function getRandomMove() {
-            const available = board.map((cell, index) => cell === '' ? index : null).filter(val => val !== null);
-            return available.length > 0 ? available[Math.floor(Math.random() * available.length)] : -1;
-        }
-
-        function findWinningMove(player) {
-            for (let i = 0; i < 9; i++) {
-                if (!board[i]) {
-                    board[i] = player;
-                    if (checkWinForPlayer(player)) {
-                        board[i] = '';
-                        return i;
-                    }
-                    board[i] = '';
-                }
-            }
-            return -1;
-        }
-
-        function getCornerCounterMove() {
-            if (board.filter(c => c === 'X').length === 1) {
-                if (board[0] === 'X' && !board[8]) return 8;
-                if (board[2] === 'X' && !board[6]) return 6;
-                if (board[6] === 'X' && !board[2]) return 2;
-                if (board[8] === 'X' && !board[0]) return 0;
-            }
-            return -1;
-        }
-
-        function getStrategicCorner() {
+            // 4. Take a random corner
             const corners = [0, 2, 6, 8];
-            const availableCorners = corners.filter(i => !board[i]);
+            const availableCorners = corners.filter(index => {
+                const row = Math.floor(index / 3);
+                const col = index % 3;
+                return board[row][col] === 0;
+            });
             if (availableCorners.length > 0) {
                 return availableCorners[Math.floor(Math.random() * availableCorners.length)];
             }
+
+            // 5. Take a random available cell
+            const availableCells = emptyCells(board).map(cell => cell[0] * 3 + cell[1]);
+            if (availableCells.length > 0) {
+                return availableCells[Math.floor(Math.random() * availableCells.length)];
+            }
+            
+            return -1; // Should not happen
+        }
+
+        function findWinningMove(player) {
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    if (board[i][j] === 0) {
+                        board[i][j] = player;
+                        const hasWon = gameOver(board, player);
+                        board[i][j] = 0;
+                        if (hasWon) {
+                            return i * 3 + j;
+                        }
+                    }
+                }
+            }
             return -1;
         }
 
-        function checkWinForPlayer(player) {
-            return winPatterns.some(pattern => 
-                pattern.every(index => board[index] === player)
-            );
+        // --- MINIMAX AI LOGIC ---
+        function evalute(state) {
+            if (gameOver(state, COMP)) {
+                return +1;
+            } else if (gameOver(state, HUMAN)) {
+                return -1;
+            } else {
+                return 0;
+            }
         }
 
+        function gameOver(state, player) {
+            const win_state = [
+                [[0,0], [0,1], [0,2]],
+                [[1,0], [1,1], [1,2]],
+                [[2,0], [2,1], [2,2]],
+                [[0,0], [1,0], [2,0]],
+                [[0,1], [1,1], [2,1]],
+                [[0,2], [1,2], [2,2]],
+                [[0,0], [1,1], [2,2]],
+                [[2,0], [1,1], [0,2]],
+            ];
+
+            for (let i = 0; i < 8; i++) {
+                let line = win_state[i];
+                if (state[line[0][0]][line[0][1]] === player &&
+                    state[line[1][0]][line[1][1]] === player &&
+                    state[line[2][0]][line[2][1]] === player) {
+                    return line;
+                }
+            }
+            return null;
+        }
+
+        function gameOverAll(state) {
+            return gameOver(state, HUMAN) || gameOver(state, COMP);
+        }
+
+        function emptyCells(state) {
+            let cells = [];
+            for (let x = 0; x < 3; x++) {
+                for (let y = 0; y < 3; y++) {
+                    if (state[x][y] === 0) {
+                        cells.push([x, y]);
+                    }
+                }
+            }
+            return cells;
+        }
+
+        function minimax(state, depth, player) {
+            let best;
+
+            if (player === COMP) {
+                best = [-1, -1, -Infinity];
+            } else {
+                best = [-1, -1, +Infinity];
+            }
+
+            if (depth === 0 || gameOverAll(state)) {
+                let score = evalute(state);
+                return [-1, -1, score];
+            }
+
+            emptyCells(state).forEach(function (cell) {
+                let x = cell[0];
+                let y = cell[1];
+                state[x][y] = player;
+                let score = minimax(state, depth - 1, -player);
+                state[x][y] = 0;
+                score[0] = x;
+                score[1] = y;
+
+                if (player === COMP) {
+                    if (score[2] > best[2]) {
+                        best = score;
+                    }
+                } else {
+                    if (score[2] < best[2]) {
+                        best = score;
+                    }
+                }
+            });
+
+            return best;
+        }
+        // --- END OF MINIMAX ---
+
+        function checkWin(player) {
+            const winningLine = gameOver(board, player);
+            if (winningLine) {
+                winningLine.forEach(cell => {
+                    const index = cell[0] * 3 + cell[1];
+                    document.querySelector(`[data-index="${index}"]`).classList.add('winning');
+                });
+                return true;
+            }
+            return false;
+        }
+        
         function updateCell(index) {
             const cell = document.querySelector(`[data-index="${index}"]`);
             cell.textContent = currentPlayer;
             cell.classList.add(currentPlayer.toLowerCase(), 'disabled');
         }
 
-        function checkWin() {
-            for (let pattern of winPatterns) {
-                if (pattern.every(index => board[index] === currentPlayer)) {
-                    // Highlight winning cells
-                    pattern.forEach(index => {
-                        document.querySelector(`[data-index="${index}"]`).classList.add('winning');
-                    });
-                    return true;
-                }
-            }
-            return false;
-        }
-
         function switchPlayer() {
             currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
             updateStatus();
             const gameBoard = document.getElementById('game-board');
-            if (gameMode === 'ai' && currentPlayer === 'O') {
-                gameBoard.classList.add('disabled');
-            } else {
-                gameBoard.classList.remove('disabled');
+            if (gameMode === 'ai') {
+                if (currentPlayer === 'O') {
+                    gameBoard.classList.add('disabled');
+                } else {
+                    gameBoard.classList.remove('disabled');
+                }
             }
         }
 
@@ -619,7 +746,6 @@
             gameActive = false;
             const status = document.getElementById('status');
             
-            // Disable all cells
             document.querySelectorAll('.cell').forEach(cell => {
                 cell.classList.add('disabled');
             });
@@ -643,7 +769,7 @@
         }
 
         function resetGame() {
-            board = ['', '', '', '', '', '', '', '', ''];
+            board = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
             currentPlayer = 'X';
             gameActive = true;
 
@@ -690,6 +816,14 @@
         });
         
         handleThemePreference();
+
+        // Initial screen setup
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+            document.getElementById('homeScreen').style.display = 'block';
+            document.getElementById('homeScreen').classList.add('active');
+        });
+
     </script>
 </body>
 </html>
